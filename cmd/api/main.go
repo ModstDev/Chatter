@@ -5,6 +5,8 @@ import (
 
 	"github.com/ModstDev/Chatter/internal/config"
 	"github.com/ModstDev/Chatter/internal/database"
+	sqlc "github.com/ModstDev/Chatter/internal/database/sqlc"
+	"github.com/ModstDev/Chatter/internal/user"
 	"github.com/joho/godotenv"
 )
 
@@ -24,5 +26,11 @@ func main() {
 	}
 	defer db.Close()
 
-	log.Printf("database conncetion established")
+	queries := sqlc.New(db)
+	userRepository := user.NewRepository(queries)
+	userService := user.NewService(userRepository)
+
+	_ = userService
+
+	log.Println("application initialized")
 }
