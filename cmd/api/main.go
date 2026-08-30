@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/ModstDev/Chatter/internal/config"
+	"github.com/ModstDev/Chatter/internal/database"
 	"github.com/joho/godotenv"
 )
 
@@ -17,5 +18,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("database configured for %s:%s", cfg.Database.Host, cfg.Database.Port)
+	db, err := database.Connect(cfg.Database)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	log.Printf("database conncetion established")
 }
