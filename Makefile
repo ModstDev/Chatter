@@ -1,14 +1,16 @@
-DB_DRIVER=mysql
-DB_DSN=chat:chat@tcp(localhost:3307)/chat?parseTime=true
+include .env
+export
+
+MIGRATIONS_DIR=migrations
+DSN=$(DB_USER):$(DB_PASSWORD)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)?parseTime=true
+
+.PHONY: migrate-up migrate-down migrate-status
 
 migrate-up:
-	goose -dir migrations $(DB_DRIVER) "$(DB_DSN)" up
+	goose -dir $(MIGRATIONS_DIR) mysql "$(DSN)" up
 
 migrate-down:
-	goose -dir migrations $(DB_DRIVER) "$(DB_DSN)" down
+	goose -dir $(MIGRATIONS_DIR) mysql "$(DSN)" down
 
 migrate-status:
-	goose -dir migrations $(DB_DRIVER) "$(DB_DSN)" status
-
-migration:
-	goose -dir migrations create $(name) sql
+	goose -dir $(MIGRATIONS_DIR) mysql "$(DSN)" status
