@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	Database DatabaseConfig
+	Auth     AuthConfig
 }
 
 type DatabaseConfig struct {
@@ -15,6 +16,12 @@ type DatabaseConfig struct {
 	User     string
 	Password string
 	Name     string
+}
+
+type AuthConfig struct {
+	JWTSecret       string
+	AccessTokenTTL  string
+	RefreshTokenTTL string
 }
 
 func Load() (Config, error) {
