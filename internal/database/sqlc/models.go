@@ -5,6 +5,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -24,6 +25,15 @@ type Message struct {
 	SenderID       string
 	Content        string
 	CreatedAt      time.Time
+}
+
+type RefreshToken struct {
+	ID        string
+	UserID    string
+	TokenHash string
+	ExpiresAt time.Time
+	CreatedAt time.Time
+	RevokedAt sql.NullTime
 }
 
 type User struct {
