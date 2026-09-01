@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/ModstDev/Chatter/internal/auth"
 	"github.com/ModstDev/Chatter/internal/config"
 	"github.com/ModstDev/Chatter/internal/database"
 	sqlc "github.com/ModstDev/Chatter/internal/database/sqlc"
@@ -29,8 +30,13 @@ func main() {
 	defer db.Close()
 
 	queries := sqlc.New(db)
+
+	tokenManager := auth.NewTokenManager(cfg.Auth.JWTSecret)
+
 	userRepository := user.NewRepository(queries)
+
 	userService := user.NewService(userRepository)
+
 	userHandler := user.NewHandler(userService)
 
 	router := server.NewRouter(userHandler)
@@ -40,4 +46,6 @@ func main() {
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatal(err)
 	}
+
+	_ = tokenManager
 }

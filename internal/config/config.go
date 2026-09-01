@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -20,8 +21,8 @@ type DatabaseConfig struct {
 
 type AuthConfig struct {
 	JWTSecret       string
-	AccessTokenTTL  string
-	RefreshTokenTTL string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
 }
 
 func Load() (Config, error) {
@@ -30,8 +31,14 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	auth, err := loadAuthConfig()
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
 		Database: database,
+		Auth:     auth,
 	}, nil
 }
 
@@ -65,4 +72,35 @@ func loadDatabaseConfig() (DatabaseConfig, error) {
 	}
 
 	return config, nil
+}
+
+func loadAuthConfig() (AuthConfig, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return AuthConfig{}, fmt.Errorf("JWT_SECRET is required")
+	}
+
+	accessTokenTTL, err := time.ParseDuration(os.Getenv("ACCESS_TOKEN_TTL"))
+	if err != nil {
+		return AuthConfig{}, fmt.Errorf("parsing ACCESS_TOKEN_TTL: %w", err)
+	}
+
+	if accessTokenTTL <= 0 {
+		return AuthConfig{}, fmt.Errorf("ACCESS_TOKEN_TTL must be greater than zero")
+	}
+
+	refreshTokenTTL, err := time.ParseDuration(os.Getenv("REFRESH_TOKEN_TTL"))
+	if err != nil {
+		return AuthConfig{}, fmt.Errorf("parsing REFRESH_TOKEN_TTL: %w", err)
+	}
+
+	if refreshTokenTTL <= 0 {
+		return AuthConfig{}, fmt.Errorf("REFRESH_TOKEN_TTL must be greater than zero")
+	}
+
+	return AuthConfig{
+		JWTSecret:       jwtSecret,
+		AccessTokenTTL:  accessTokenTTL,
+		RefreshTokenTTL: refreshTokenTTL,
+	}, nil
 }
