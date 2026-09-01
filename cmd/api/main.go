@@ -2,10 +2,12 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/ModstDev/Chatter/internal/config"
 	"github.com/ModstDev/Chatter/internal/database"
 	sqlc "github.com/ModstDev/Chatter/internal/database/sqlc"
+	server "github.com/ModstDev/Chatter/internal/http"
 	"github.com/ModstDev/Chatter/internal/user"
 	"github.com/joho/godotenv"
 )
@@ -29,8 +31,13 @@ func main() {
 	queries := sqlc.New(db)
 	userRepository := user.NewRepository(queries)
 	userService := user.NewService(userRepository)
+	userHandler := user.NewHandler(userService)
 
-	_ = userService
+	router := server.NewRouter(userHandler)
 
-	log.Println("application initialized")
+	log.Println("server listening on :8080")
+
+	if err := http.ListenAndServe(":8080", router); err != nil {
+		log.Fatal(err)
+	}
 }
