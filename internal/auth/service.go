@@ -10,6 +10,7 @@ import (
 	db "github.com/ModstDev/Chatter/internal/database/sqlc"
 	"github.com/ModstDev/Chatter/internal/user"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Service struct {
@@ -37,6 +38,12 @@ func NewService(
 }
 
 type RefreshResult struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresIn    int64
+}
+
+type LoginResult struct {
 	AccessToken  string
 	RefreshToken string
 	ExpiresIn    int64
@@ -123,6 +130,50 @@ func (s *Service) Refresh(ctx context.Context, refreshToken string) (RefreshResu
 	return RefreshResult{
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
+		ExpiresIn:    int64(s.accessTokenTTL.Seconds()),
+	}, nil
+}
+
+func (s *Service) Login(ctx context.Context, email string, password string) (LoginResult, error) {
+	if email == "" {
+		return LoginResult{}, fmt.Errorf("email is required")
+	}
+
+	if password == "" {
+		return LoginResult{}, fmt.Errorf("password is required")
+	}
+
+	user, err := s.users.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return LoginResult{}, fmt.Errorf("invalid email or password")
+		}
+
+		return LoginResult{}, fmt.Errorf("getting user by email: %w", err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return LoginResult{}, fmt.Errorf("invalid email or password")
+	}
+
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("parse user id: %w", err)
+	}
+
+	accessToken, err := s.tokens.GenerateAccessToken(userID, s.accessTokenTTL)
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("generate access token: %w", err)
+	}
+
+	refreshToken, err := s.createRefreshToken(ctx, userID)
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("create refresh token: %w", err)
+	}
+
+	return LoginResult{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 		ExpiresIn:    int64(s.accessTokenTTL.Seconds()),
 	}, nil
 }
