@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -85,4 +86,16 @@ WHERE id = ?
 func (q *Queries) RevokeRefreshToken(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, revokeRefreshToken, id)
 	return err
+}
+
+const revokeRefreshTokenIfActive = `-- name: RevokeRefreshTokenIfActive :execresult
+UPDATE refresh_tokens
+SET revoked_at = CURRENT_TIMESTAMP
+WHERE id = ?
+  AND revoked_at IS NULL
+  AND expires_at > CURRENT_TIMESTAMP
+`
+
+func (q *Queries) RevokeRefreshTokenIfActive(ctx context.Context, id string) (sql.Result, error) {
+	return q.db.ExecContext(ctx, revokeRefreshTokenIfActive, id)
 }

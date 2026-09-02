@@ -34,6 +34,7 @@ func main() {
 	tokenManager := auth.NewTokenManager(cfg.Auth.JWTSecret)
 
 	userRepository := user.NewRepository(queries)
+	refreshTokenRepository := auth.NewRefreshTokenRepository(db, queries)
 
 	userService := user.NewService(userRepository)
 
@@ -48,4 +49,5 @@ func main() {
 	}
 
 	_ = tokenManager
+	_ = refreshTokenRepository
 }
