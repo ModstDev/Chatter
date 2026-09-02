@@ -177,3 +177,31 @@ func (s *Service) Login(ctx context.Context, email string, password string) (Log
 		ExpiresIn:    int64(s.accessTokenTTL.Seconds()),
 	}, nil
 }
+
+func (s *Service) Logout(ctx context.Context, refreshToken string) error {
+	if refreshToken == "" {
+		return fmt.Errorf("refresh token is required")
+	}
+
+	tokenHash := hashRefreshToken(refreshToken)
+
+	storedToken, err := s.refreshTokens.GetByHash(ctx, tokenHash)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("invalid refresh token")
+		}
+
+		return fmt.Errorf("getting refresh token: %w", err)
+	}
+
+	tokenID, err := uuid.Parse(storedToken.ID)
+	if err != nil {
+		return fmt.Errorf("parse refresh token id: %w", err)
+	}
+
+	if err := s.refreshTokens.Revoke(ctx, tokenID); err != nil {
+		return fmt.Errorf("revoking refresh token: %w", err)
+	}
+
+	return nil
+}

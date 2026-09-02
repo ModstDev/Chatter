@@ -37,10 +37,12 @@ func main() {
 	refreshTokenRepository := auth.NewRefreshTokenRepository(db, queries)
 
 	userService := user.NewService(userRepository)
+	authService := auth.NewService(userRepository, refreshTokenRepository, tokenManager, cfg.Auth.AccessTokenTTL, cfg.Auth.RefreshTokenTTL)
 
 	userHandler := user.NewHandler(userService)
+	authHandler := auth.NewHandler(authService)
 
-	router := server.NewRouter(userHandler)
+	router := server.NewRouter(userHandler, authHandler)
 
 	log.Println("server listening on :8080")
 
