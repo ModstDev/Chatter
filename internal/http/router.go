@@ -9,8 +9,11 @@ import (
 
 func NewRouter(userHandler *user.Handler,
 	authHandler *auth.Handler,
+	tokenManager *auth.TokenManager,
 ) http.Handler {
 	mux := http.NewServeMux()
+
+	mux.Handle("GET /users", auth.AuthMiddleware(tokenManager, http.HandlerFunc(userHandler.List)))
 
 	mux.HandleFunc("POST /register", userHandler.Register)
 	mux.HandleFunc("POST /auth/login", authHandler.Login)

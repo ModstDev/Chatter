@@ -42,7 +42,7 @@ func main() {
 	userHandler := user.NewHandler(userService)
 	authHandler := auth.NewHandler(authService)
 
-	router := server.NewRouter(userHandler, authHandler)
+	router := server.NewRouter(userHandler, authHandler, tokenManager)
 
 	log.Println("server listening on :8080")
 

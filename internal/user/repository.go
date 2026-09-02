@@ -12,6 +12,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (db.User, error)
 	GetByEmail(ctx context.Context, email string) (db.User, error)
 	GetByUsername(ctx context.Context, username string) (db.User, error)
+	List(ctx context.Context) ([]db.User, error)
 }
 
 type repository struct {
@@ -38,4 +39,8 @@ func (r *repository) GetByEmail(ctx context.Context, email string) (db.User, err
 
 func (r *repository) GetByUsername(ctx context.Context, username string) (db.User, error) {
 	return r.queries.GetUserByUsername(ctx, username)
+}
+
+func (r *repository) List(ctx context.Context) ([]db.User, error) {
+	return r.queries.ListUsers(ctx)
 }

@@ -42,3 +42,13 @@ SELECT
 FROM users
 WHERE username = ?
 LIMIT 1;
+
+-- name: ListUsers :many
+SELECT
+    id,
+    username,
+    email,
+    password_hash,
+    created_at
+FROM users
+ORDER BY username;

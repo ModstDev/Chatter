@@ -71,3 +71,7 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (db.User, error) {
 
 	return user, nil
 }
+
+func (s *Service) List(ctx context.Context) ([]db.User, error) {
+	return s.repository.List(ctx)
+}
