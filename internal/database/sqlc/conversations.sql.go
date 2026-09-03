@@ -89,3 +89,63 @@ func (q *Queries) GetConversationByID(ctx context.Context, id string) (GetConver
 	err := row.Scan(&i.ID, &i.CreatedAt)
 	return i, err
 }
+
+const listDirectConversationsForUser = `-- name: ListDirectConversationsForUser :many
+SELECT
+    c.id,
+    c.created_at,
+    u.id AS other_user_id,
+    u.username AS other_username
+FROM conversations c
+JOIN conversation_members cm
+    ON cm.conversation_id = c.id
+JOIN conversation_members other_cm
+    ON other_cm.conversation_id = c.id
+JOIN users u
+    ON u.id = other_cm.user_id
+WHERE cm.user_id = ?
+  AND other_cm.user_id != ?
+  AND c.user_low IS NOT NULL
+  AND c.user_high IS NOT NULL
+ORDER BY c.created_at DESC
+`
+
+type ListDirectConversationsForUserParams struct {
+	UserID   string
+	UserID_2 string
+}
+
+type ListDirectConversationsForUserRow struct {
+	ID            string
+	CreatedAt     time.Time
+	OtherUserID   string
+	OtherUsername string
+}
+
+func (q *Queries) ListDirectConversationsForUser(ctx context.Context, arg ListDirectConversationsForUserParams) ([]ListDirectConversationsForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDirectConversationsForUser, arg.UserID, arg.UserID_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDirectConversationsForUserRow
+	for rows.Next() {
+		var i ListDirectConversationsForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.OtherUserID,
+			&i.OtherUsername,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

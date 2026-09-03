@@ -27,3 +27,22 @@ FROM conversations
 WHERE user_low = ?
   AND user_high = ?
 LIMIT 1;
+
+-- name: ListDirectConversationsForUser :many
+SELECT
+    c.id,
+    c.created_at,
+    u.id AS other_user_id,
+    u.username AS other_username
+FROM conversations c
+JOIN conversation_members cm
+    ON cm.conversation_id = c.id
+JOIN conversation_members other_cm
+    ON other_cm.conversation_id = c.id
+JOIN users u
+    ON u.id = other_cm.user_id
+WHERE cm.user_id = ?
+  AND other_cm.user_id != ?
+  AND c.user_low IS NOT NULL
+  AND c.user_high IS NOT NULL
+ORDER BY c.created_at DESC;

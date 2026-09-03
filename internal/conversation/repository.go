@@ -3,14 +3,16 @@ package conversation
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	db "github.com/ModstDev/Chatter/internal/database/sqlc"
+	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 )
 
 type Repository interface {
-	Create(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error)
+	CreateDirect(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error)
 	AddMember(ctx context.Context, conversationID, userID uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (db.GetConversationByIDRow, error)
 	FindDirectConversation(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error)
@@ -28,7 +30,7 @@ func NewRepository(db *sql.DB, queries *db.Queries) Repository {
 	}
 }
 
-func (r *repository) Create(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error) {
+func (r *repository) CreateDirect(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("begin conversatio ntransaction: %w", err)
@@ -46,6 +48,10 @@ func (r *repository) Create(ctx context.Context, userLow uuid.UUID, userHigh uui
 	if err != nil {
 		_ = tx.Rollback()
 
+		if isDuplicateKeyError(err) {
+			return uuid.Nil, errors.New("direct conversation already exists")
+		}
+
 		return uuid.Nil, fmt.Errorf("create direct conversation: %w", err)
 	}
 
@@ -54,6 +60,10 @@ func (r *repository) Create(ctx context.Context, userLow uuid.UUID, userHigh uui
 		UserID:         userLow.String(),
 	}); err != nil {
 		_ = tx.Rollback()
+
+		if isDuplicateKeyError(err) {
+			return uuid.Nil, errors.New("direct conversation already exists")
+		}
 
 		return uuid.Nil, fmt.Errorf("add first conversation member %w", err)
 	}
@@ -95,4 +105,11 @@ func (r *repository) FindDirectConversation(ctx context.Context, userLow uuid.UU
 	}
 
 	return uuid.Parse(id)
+}
+
+func isDuplicateKeyError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+
+	return errors.As(err, &mysqlErr) &&
+		mysqlErr.Number == 1062
 }
