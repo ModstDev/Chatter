@@ -1,8 +1,10 @@
 -- name: CreateConversation :exec
 INSERT INTO conversations (
-    id
+    id,
+    user_low,
+    user_high
 )
-VALUES (?);
+VALUES (?, ?, ?);
 
 -- name: AddConversationMember :exec
 INSERT INTO conversation_members (
@@ -20,11 +22,8 @@ WHERE id = ?
 LIMIT 1;
 
 -- name: FindDirectConversation :one
-SELECT
-    cm1.conversation_id
-FROM conversation_members cm1
-JOIN conversation_members cm2
-    ON cm1.conversation_id = cm2.conversation_id
-WHERE cm1.user_id = ?
-    AND cm2.user_id = ?
+SELECT id
+FROM conversations
+WHERE user_low = ?
+  AND user_high = ?
 LIMIT 1;

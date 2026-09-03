@@ -10,10 +10,10 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, userID1 uuid.UUID, userID2 uuid.UUID) (uuid.UUID, error)
+	Create(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error)
 	AddMember(ctx context.Context, conversationID, userID uuid.UUID) error
-	GetByID(ctx context.Context, id uuid.UUID) (db.Conversation, error)
-	FindDirectConversation(ctx context.Context, userID1 uuid.UUID, userID2 uuid.UUID) (uuid.UUID, error)
+	GetByID(ctx context.Context, id uuid.UUID) (db.GetConversationByIDRow, error)
+	FindDirectConversation(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error)
 }
 
 type repository struct {
@@ -28,7 +28,7 @@ func NewRepository(db *sql.DB, queries *db.Queries) Repository {
 	}
 }
 
-func (r *repository) Create(ctx context.Context, userID1 uuid.UUID, userID2 uuid.UUID) (uuid.UUID, error) {
+func (r *repository) Create(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("begin conversatio ntransaction: %w", err)
@@ -38,15 +38,20 @@ func (r *repository) Create(ctx context.Context, userID1 uuid.UUID, userID2 uuid
 
 	conversationID := uuid.New()
 
-	if err := txQueries.CreateConversation(ctx, conversationID.String()); err != nil {
+	err = txQueries.CreateConversation(ctx, db.CreateConversationParams{
+		ID:       conversationID.String(),
+		UserLow:  sql.NullString{String: userLow.String(), Valid: true},
+		UserHigh: sql.NullString{String: userHigh.String(), Valid: true},
+	})
+	if err != nil {
 		_ = tx.Rollback()
 
-		return uuid.Nil, fmt.Errorf("create conversation: %w", err)
+		return uuid.Nil, fmt.Errorf("create direct conversation: %w", err)
 	}
 
 	if err := txQueries.AddConversationMember(ctx, db.AddConversationMemberParams{
 		ConversationID: conversationID.String(),
-		UserID:         userID1.String(),
+		UserID:         userLow.String(),
 	}); err != nil {
 		_ = tx.Rollback()
 
@@ -55,7 +60,7 @@ func (r *repository) Create(ctx context.Context, userID1 uuid.UUID, userID2 uuid
 
 	if err := txQueries.AddConversationMember(ctx, db.AddConversationMemberParams{
 		ConversationID: conversationID.String(),
-		UserID:         userID2.String(),
+		UserID:         userHigh.String(),
 	}); err != nil {
 		_ = tx.Rollback()
 
@@ -76,14 +81,14 @@ func (r *repository) AddMember(ctx context.Context, conversationID, userID uuid.
 	})
 }
 
-func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (db.Conversation, error) {
+func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (db.GetConversationByIDRow, error) {
 	return r.queries.GetConversationByID(ctx, id.String())
 }
 
-func (r *repository) FindDirectConversation(ctx context.Context, userID1, userID2 uuid.UUID) (uuid.UUID, error) {
+func (r *repository) FindDirectConversation(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error) {
 	id, err := r.queries.FindDirectConversation(ctx, db.FindDirectConversationParams{
-		UserID:   userID1.String(),
-		UserID_2: userID2.String(),
+		UserLow:  sql.NullString{String: userLow.String(), Valid: true},
+		UserHigh: sql.NullString{String: userHigh.String(), Valid: true},
 	})
 	if err != nil {
 		return uuid.Nil, err

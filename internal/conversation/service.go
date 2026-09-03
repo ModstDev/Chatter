@@ -32,7 +32,9 @@ func (s *Service) CreateDirect(ctx context.Context, userID uuid.UUID, otherUserI
 		return uuid.Nil, fmt.Errorf("cannot create conversation with yourself")
 	}
 
-	existingID, err := s.repository.FindDirectConversation(ctx, userID, otherUserID)
+	userLow, userHigh := normalizeUserPair(userID, otherUserID)
+
+	existingID, err := s.repository.FindDirectConversation(ctx, userLow, userHigh)
 	if err == nil {
 		return existingID, nil
 	}
@@ -41,10 +43,10 @@ func (s *Service) CreateDirect(ctx context.Context, userID uuid.UUID, otherUserI
 		return uuid.Nil, fmt.Errorf("find direct conversation: %w", err)
 	}
 
-	conversationID, err := s.repository.Create(
+	conversationID, err := s.repository.CreateDirect(
 		ctx,
-		userID,
-		otherUserID,
+		userLow,
+		userHigh,
 	)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf(
@@ -54,4 +56,12 @@ func (s *Service) CreateDirect(ctx context.Context, userID uuid.UUID, otherUserI
 	}
 
 	return conversationID, nil
+}
+
+func normalizeUserPair(userID1 uuid.UUID, userID2 uuid.UUID) (uuid.UUID, uuid.UUID) {
+	if userID1.String() < userID2.String() {
+		return userID1, userID2
+	}
+
+	return userID2, userID1
 }

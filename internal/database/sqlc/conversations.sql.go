@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
 const addConversationMember = `-- name: AddConversationMember :exec
@@ -29,37 +31,42 @@ func (q *Queries) AddConversationMember(ctx context.Context, arg AddConversation
 
 const createConversation = `-- name: CreateConversation :exec
 INSERT INTO conversations (
-    id
+    id,
+    user_low,
+    user_high
 )
-VALUES (?)
+VALUES (?, ?, ?)
 `
 
-func (q *Queries) CreateConversation(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, createConversation, id)
+type CreateConversationParams struct {
+	ID       string
+	UserLow  sql.NullString
+	UserHigh sql.NullString
+}
+
+func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) error {
+	_, err := q.db.ExecContext(ctx, createConversation, arg.ID, arg.UserLow, arg.UserHigh)
 	return err
 }
 
 const findDirectConversation = `-- name: FindDirectConversation :one
-SELECT
-    cm1.conversation_id
-FROM conversation_members cm1
-JOIN conversation_members cm2
-    ON cm1.conversation_id = cm2.conversation_id
-WHERE cm1.user_id = ?
-    AND cm2.user_id = ?
+SELECT id
+FROM conversations
+WHERE user_low = ?
+  AND user_high = ?
 LIMIT 1
 `
 
 type FindDirectConversationParams struct {
-	UserID   string
-	UserID_2 string
+	UserLow  sql.NullString
+	UserHigh sql.NullString
 }
 
 func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConversationParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, findDirectConversation, arg.UserID, arg.UserID_2)
-	var conversation_id string
-	err := row.Scan(&conversation_id)
-	return conversation_id, err
+	row := q.db.QueryRowContext(ctx, findDirectConversation, arg.UserLow, arg.UserHigh)
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getConversationByID = `-- name: GetConversationByID :one
@@ -71,9 +78,14 @@ WHERE id = ?
 LIMIT 1
 `
 
-func (q *Queries) GetConversationByID(ctx context.Context, id string) (Conversation, error) {
+type GetConversationByIDRow struct {
+	ID        string
+	CreatedAt time.Time
+}
+
+func (q *Queries) GetConversationByID(ctx context.Context, id string) (GetConversationByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getConversationByID, id)
-	var i Conversation
+	var i GetConversationByIDRow
 	err := row.Scan(&i.ID, &i.CreatedAt)
 	return i, err
 }

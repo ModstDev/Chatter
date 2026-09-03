@@ -12,6 +12,8 @@ import (
 type Conversation struct {
 	ID        string
 	CreatedAt time.Time
+	UserLow   sql.NullString
+	UserHigh  sql.NullString
 }
 
 type ConversationMember struct {
