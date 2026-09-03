@@ -41,18 +41,16 @@ func (s *Service) CreateDirect(ctx context.Context, userID uuid.UUID, otherUserI
 		return uuid.Nil, fmt.Errorf("find direct conversation: %w", err)
 	}
 
-	conversationID := uuid.New()
-
-	if err := s.repository.Create(ctx, conversationID); err != nil {
-		return uuid.Nil, fmt.Errorf("create conversation: %w", err)
-	}
-
-	if err := s.repository.AddMember(ctx, conversationID, userID); err != nil {
-		return uuid.Nil, fmt.Errorf("add first conversation member: %w", err)
-	}
-
-	if err := s.repository.AddMember(ctx, conversationID, otherUserID); err != nil {
-		return uuid.Nil, fmt.Errorf("add second conversation member: %w", err)
+	conversationID, err := s.repository.Create(
+		ctx,
+		userID,
+		otherUserID,
+	)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf(
+			"create direct conversation: %w",
+			err,
+		)
 	}
 
 	return conversationID, nil
