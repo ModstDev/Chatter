@@ -16,6 +16,7 @@ type Repository interface {
 	AddMember(ctx context.Context, conversationID, userID uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (db.GetConversationByIDRow, error)
 	FindDirectConversation(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error)
+	ListDirectForUser(ctx context.Context, userID uuid.UUID) ([]db.ListDirectConversationsForUserRow, error)
 }
 
 type repository struct {
@@ -105,6 +106,16 @@ func (r *repository) FindDirectConversation(ctx context.Context, userLow uuid.UU
 	}
 
 	return uuid.Parse(id)
+}
+
+func (r *repository) ListDirectForUser(ctx context.Context, userID uuid.UUID) ([]db.ListDirectConversationsForUserRow, error) {
+	return r.queries.ListDirectConversationsForUser(
+		ctx,
+		db.ListDirectConversationsForUserParams{
+			UserID:   userID.String(),
+			UserID_2: userID.String(),
+		},
+	)
 }
 
 func isDuplicateKeyError(err error) bool {

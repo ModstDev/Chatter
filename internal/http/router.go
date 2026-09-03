@@ -19,6 +19,10 @@ func NewRouter(userHandler *user.Handler,
 		auth.AuthMiddleware(tokenManager,
 			http.HandlerFunc(userHandler.List)))
 
+	mux.Handle("GET /conversations",
+		auth.AuthMiddleware(tokenManager,
+			http.HandlerFunc(conversationHandler.List)))
+
 	mux.HandleFunc("POST /register", userHandler.Register)
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
 	mux.HandleFunc("POST /auth/refresh", authHandler.Refresh)

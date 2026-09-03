@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,6 +18,13 @@ func NewService(repository Repository) *Service {
 	return &Service{
 		repository: repository,
 	}
+}
+
+type ConverstionListItem struct {
+	ID            uuid.UUID
+	CreatedAt     time.Time
+	OtherUserID   uuid.UUID
+	OtherUsername string
 }
 
 func (s *Service) CreateDirect(ctx context.Context, userID uuid.UUID, otherUserID uuid.UUID) (uuid.UUID, error) {
@@ -56,6 +64,36 @@ func (s *Service) CreateDirect(ctx context.Context, userID uuid.UUID, otherUserI
 	}
 
 	return conversationID, nil
+}
+
+func (s *Service) ListForUser(ctx context.Context, userID uuid.UUID) ([]ConverstionListItem, error) {
+	rows, err := s.repository.ListDirectForUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list conversations: %w", err)
+	}
+
+	conversations := make([]ConverstionListItem, 0, len(rows))
+
+	for _, row := range rows {
+		conversationID, err := uuid.Parse(row.ID)
+		if err != nil {
+			return nil, fmt.Errorf("parse conversation id: %w", err)
+		}
+
+		otherUserID, err := uuid.Parse(row.OtherUserID)
+		if err != nil {
+			return nil, fmt.Errorf("parse other user id: %w", err)
+		}
+
+		conversations = append(conversations, ConverstionListItem{
+			ID:            conversationID,
+			CreatedAt:     row.CreatedAt,
+			OtherUserID:   otherUserID,
+			OtherUsername: row.OtherUsername,
+		})
+	}
+
+	return conversations, nil
 }
 
 func normalizeUserPair(userID1 uuid.UUID, userID2 uuid.UUID) (uuid.UUID, uuid.UUID) {
