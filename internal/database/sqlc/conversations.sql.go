@@ -90,6 +90,27 @@ func (q *Queries) GetConversationByID(ctx context.Context, id string) (GetConver
 	return i, err
 }
 
+const isConversationMember = `-- name: IsConversationMember :one
+SELECT EXISTS (
+    SELECT 1
+    FROM conversation_members
+    WHERE conversation_id = ?
+        AND user_id = ?
+)
+`
+
+type IsConversationMemberParams struct {
+	ConversationID string
+	UserID         string
+}
+
+func (q *Queries) IsConversationMember(ctx context.Context, arg IsConversationMemberParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isConversationMember, arg.ConversationID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listDirectConversationsForUser = `-- name: ListDirectConversationsForUser :many
 SELECT
     c.id,

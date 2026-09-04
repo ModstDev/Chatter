@@ -46,3 +46,11 @@ WHERE cm.user_id = ?
   AND c.user_low IS NOT NULL
   AND c.user_high IS NOT NULL
 ORDER BY c.created_at DESC;
+
+-- name: IsConversationMember :one
+SELECT EXISTS (
+    SELECT 1
+    FROM conversation_members
+    WHERE conversation_id = ?
+        AND user_id = ?
+);
