@@ -2,11 +2,13 @@ package websocket
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/ModstDev/Chatter/internal/auth"
+	"github.com/ModstDev/Chatter/internal/message"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 )
@@ -14,13 +16,26 @@ import (
 type Handler struct {
 	tokenManager *auth.TokenManager
 	hub          *Hub
+	messages     *message.Service
 }
 
-func NewHandler(tokenManager *auth.TokenManager, hub *Hub) *Handler {
+func NewHandler(tokenManager *auth.TokenManager, hub *Hub, messages *message.Service) *Handler {
 	return &Handler{
 		tokenManager: tokenManager,
 		hub:          hub,
+		messages:     messages,
 	}
+}
+
+type messageRequest struct {
+	Type           string `json:"type"`
+	ConversationID string `json:"conversation_id"`
+	Content        string `json:"content"`
+}
+
+type messageEvent struct {
+	Type    string           `json:"type"`
+	Message *message.Message `json:"message"`
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -67,9 +82,38 @@ func (h *Handler) authenticate(r *http.Request) (uuid.UUID, error) {
 
 func (h *Handler) readLoop(ctx context.Context, client *Client) {
 	for {
-		_, _, err := client.conn.Read(ctx)
+		_, data, err := client.conn.Read(ctx)
 		if err != nil {
 			return
 		}
+
+		var req messageRequest
+		if err := json.Unmarshal(data, &req); err != nil {
+			continue
+		}
+
+		if req.Type != "message" {
+			continue
+		}
+
+		conversationID, err := uuid.Parse(req.ConversationID)
+		if err != nil {
+			continue
+		}
+
+		msg, err := h.messages.Send(ctx, client.userID, conversationID, req.Content)
+		if err != nil {
+			continue
+		}
+
+		event, err := json.Marshal(messageEvent{
+			Type:    "messaage",
+			Message: msg,
+		})
+		if err != nil {
+			continue
+		}
+
+		h.hub.SendToUser(client.userID, event)
 	}
 }

@@ -184,19 +184,19 @@ func (s *Service) Send(
 	userID uuid.UUID,
 	conversationID uuid.UUID,
 	content string,
-) (Message, error) {
+) (*Message, error) {
 	if userID == uuid.Nil {
-		return Message{}, fmt.Errorf("invalid user id")
+		return nil, fmt.Errorf("invalid user id")
 	}
 
 	if conversationID == uuid.Nil {
-		return Message{}, fmt.Errorf("invalid conversation id")
+		return nil, fmt.Errorf("invalid conversation id")
 	}
 
 	content = strings.TrimSpace(content)
 
 	if content == "" {
-		return Message{}, fmt.Errorf("message content cannot be empty")
+		return nil, fmt.Errorf("message content cannot be empty")
 	}
 
 	isMember, err := s.conversations.IsMember(
@@ -205,11 +205,11 @@ func (s *Service) Send(
 		userID,
 	)
 	if err != nil {
-		return Message{}, fmt.Errorf("check conversation membership: %w", err)
+		return nil, fmt.Errorf("check conversation membership: %w", err)
 	}
 
 	if !isMember {
-		return Message{}, fmt.Errorf("user is not a conversation member")
+		return nil, fmt.Errorf("user is not a conversation member")
 	}
 
 	messageID := uuid.New()
@@ -221,25 +221,25 @@ func (s *Service) Send(
 		Content:        content,
 	})
 	if err != nil {
-		return Message{}, fmt.Errorf("create message: %w", err)
+		return nil, fmt.Errorf("create message: %w", err)
 	}
 
 	row, err := s.messages.GetByID(ctx, messageID)
 	if err != nil {
-		return Message{}, fmt.Errorf("get created message: %w", err)
+		return nil, fmt.Errorf("get created message: %w", err)
 	}
 
 	parsedID, err := uuid.Parse(row.ID)
 	if err != nil {
-		return Message{}, fmt.Errorf("parse message id: %w", err)
+		return nil, fmt.Errorf("parse message id: %w", err)
 	}
 
 	senderID, err := uuid.Parse(row.SenderID)
 	if err != nil {
-		return Message{}, fmt.Errorf("parse sender id: %w", err)
+		return nil, fmt.Errorf("parse sender id: %w", err)
 	}
 
-	return Message{
+	return &Message{
 		ID:             parsedID,
 		ConversationID: conversationID,
 		SenderID:       senderID,
