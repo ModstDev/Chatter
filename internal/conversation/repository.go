@@ -18,6 +18,7 @@ type Repository interface {
 	FindDirectConversation(ctx context.Context, userLow uuid.UUID, userHigh uuid.UUID) (uuid.UUID, error)
 	ListDirectForUser(ctx context.Context, userID uuid.UUID) ([]db.ListDirectConversationsForUserRow, error)
 	IsMember(ctx context.Context, conversationID uuid.UUID, userID uuid.UUID) (bool, error)
+	ListMemberIDs(ctx context.Context, conversationID uuid.UUID) ([]string, error)
 }
 
 type repository struct {
@@ -131,4 +132,8 @@ func isDuplicateKeyError(err error) bool {
 
 	return errors.As(err, &mysqlErr) &&
 		mysqlErr.Number == 1062
+}
+
+func (r *repository) ListMemberIDs(ctx context.Context, conversationID uuid.UUID) ([]string, error) {
+	return r.queries.ListConversationMemberIDs(ctx, conversationID.String())
 }

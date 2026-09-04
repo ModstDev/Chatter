@@ -96,6 +96,29 @@ func (s *Service) ListForUser(ctx context.Context, userID uuid.UUID) ([]Converst
 	return conversations, nil
 }
 
+func (s *Service) ListMembers(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := s.repository.ListMemberIDs(
+		ctx,
+		conversationID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	memberIDs := make([]uuid.UUID, 0, len(rows))
+
+	for _, row := range rows {
+		id, err := uuid.Parse(row)
+		if err != nil {
+			return nil, fmt.Errorf("parse member id: %w", err)
+		}
+
+		memberIDs = append(memberIDs, id)
+	}
+
+	return memberIDs, nil
+}
+
 func normalizeUserPair(userID1 uuid.UUID, userID2 uuid.UUID) (uuid.UUID, uuid.UUID) {
 	if userID1.String() < userID2.String() {
 		return userID1, userID2

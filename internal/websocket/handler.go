@@ -4,26 +4,30 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/ModstDev/Chatter/internal/auth"
+	"github.com/ModstDev/Chatter/internal/conversation"
 	"github.com/ModstDev/Chatter/internal/message"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 )
 
 type Handler struct {
-	tokenManager *auth.TokenManager
-	hub          *Hub
-	messages     *message.Service
+	tokenManager  *auth.TokenManager
+	hub           *Hub
+	messages      *message.Service
+	conversations *conversation.Service
 }
 
-func NewHandler(tokenManager *auth.TokenManager, hub *Hub, messages *message.Service) *Handler {
+func NewHandler(tokenManager *auth.TokenManager, hub *Hub, messages *message.Service, conversations *conversation.Service) *Handler {
 	return &Handler{
-		tokenManager: tokenManager,
-		hub:          hub,
-		messages:     messages,
+		tokenManager:  tokenManager,
+		hub:           hub,
+		messages:      messages,
+		conversations: conversations,
 	}
 }
 
@@ -114,6 +118,14 @@ func (h *Handler) readLoop(ctx context.Context, client *Client) {
 			continue
 		}
 
-		h.hub.SendToUser(client.userID, event)
+		memberIDs, err := h.conversations.ListMembers(ctx, conversationID)
+		if err != nil {
+			log.Printf("list conversation members: %v", err)
+			continue
+		}
+
+		for _, memberID := range memberIDs {
+			h.hub.SendToUser(memberID, event)
+		}
 	}
 }

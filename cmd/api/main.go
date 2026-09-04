@@ -52,7 +52,7 @@ func main() {
 	messageHandler := message.NewHandler(messageService)
 
 	wsHub := websocket.NewHub()
-	wsHandler := websocket.NewHandler(tokenManager, wsHub, messageService)
+	wsHandler := websocket.NewHandler(tokenManager, wsHub, messageService, conversationService)
 
 	router := server.NewRouter(
 		userHandler,
