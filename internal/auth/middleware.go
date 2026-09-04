@@ -29,7 +29,7 @@ func AuthMiddleware(tokenManager *TokenManager, next http.Handler) http.Handler 
 
 		token := parts[1]
 
-		userID, err := tokenManager.ValidateAccessToken(token, tokenManager.secret)
+		userID, err := tokenManager.ValidateAccessToken(token)
 		if err != nil {
 			http.Error(w, "Invalid access token", http.StatusUnauthorized)
 			return

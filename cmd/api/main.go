@@ -12,6 +12,7 @@ import (
 	server "github.com/ModstDev/Chatter/internal/http"
 	"github.com/ModstDev/Chatter/internal/message"
 	"github.com/ModstDev/Chatter/internal/user"
+	"github.com/ModstDev/Chatter/internal/websocket"
 	"github.com/joho/godotenv"
 )
 
@@ -50,11 +51,15 @@ func main() {
 	messageService := message.NewService(messageRepository, conversationRepository)
 	messageHandler := message.NewHandler(messageService)
 
+	wsHub := websocket.NewHub()
+	wsHandler := websocket.NewHandler(tokenManager, wsHub)
+
 	router := server.NewRouter(
 		userHandler,
 		authHandler,
 		conversationHandler,
 		messageHandler,
+		wsHandler,
 		tokenManager,
 	)
 

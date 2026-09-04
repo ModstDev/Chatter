@@ -40,9 +40,9 @@ func (tm *TokenManager) GenerateAccessToken(userID uuid.UUID, duration time.Dura
 	return signed, nil
 }
 
-func (tm *TokenManager) ValidateAccessToken(tokenString string, secret string) (uuid.UUID, error) {
+func (tm *TokenManager) ValidateAccessToken(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
+		return []byte(tm.secret), nil
 	})
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("parsing access token: %w", err)
