@@ -28,3 +28,23 @@ WHERE conversation_id = ?
   )
 ORDER BY created_at DESC, id DESC
 LIMIT ?;
+
+-- name: CreateMessage :exec
+INSERT INTO messages (
+    id,
+    conversation_id,
+    sender_id,
+    content
+)
+VALUES (?, ?, ?, ?);
+
+-- name: GetMessageByID :one
+SELECT
+    id,
+    conversation_id,
+    sender_id,
+    content,
+    created_at
+FROM messages
+WHERE id = ?
+LIMIT 1;

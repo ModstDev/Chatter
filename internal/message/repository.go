@@ -22,6 +22,9 @@ type Repository interface {
 		messageID uuid.UUID,
 		limit int32,
 	) ([]db.Message, error)
+
+	Create(ctx context.Context, params db.CreateMessageParams) error
+	GetByID(ctx context.Context, id uuid.UUID) (db.Message, error)
 }
 
 type repository struct {
@@ -59,4 +62,12 @@ func (r *repository) ListBefore(
 		ID:             messageID.String(),
 		Limit:          limit,
 	})
+}
+
+func (r *repository) Create(ctx context.Context, params db.CreateMessageParams) error {
+	return r.queries.CreateMessage(ctx, params)
+}
+
+func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (db.Message, error) {
+	return r.queries.GetMessageByID(ctx, id.String())
 }

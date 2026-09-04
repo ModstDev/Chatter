@@ -10,6 +10,58 @@ import (
 	"time"
 )
 
+const createMessage = `-- name: CreateMessage :exec
+INSERT INTO messages (
+    id,
+    conversation_id,
+    sender_id,
+    content
+)
+VALUES (?, ?, ?, ?)
+`
+
+type CreateMessageParams struct {
+	ID             string
+	ConversationID string
+	SenderID       string
+	Content        string
+}
+
+func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) error {
+	_, err := q.db.ExecContext(ctx, createMessage,
+		arg.ID,
+		arg.ConversationID,
+		arg.SenderID,
+		arg.Content,
+	)
+	return err
+}
+
+const getMessageByID = `-- name: GetMessageByID :one
+SELECT
+    id,
+    conversation_id,
+    sender_id,
+    content,
+    created_at
+FROM messages
+WHERE id = ?
+LIMIT 1
+`
+
+func (q *Queries) GetMessageByID(ctx context.Context, id string) (Message, error) {
+	row := q.db.QueryRowContext(ctx, getMessageByID, id)
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.ConversationID,
+		&i.SenderID,
+		&i.Content,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listMessages = `-- name: ListMessages :many
 SELECT
     id,

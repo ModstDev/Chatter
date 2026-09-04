@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ModstDev/Chatter/internal/conversation"
@@ -176,4 +177,73 @@ func decodeCursor(value string) (messageCursor, error) {
 	}
 
 	return cursor, nil
+}
+
+func (s *Service) Send(
+	ctx context.Context,
+	userID uuid.UUID,
+	conversationID uuid.UUID,
+	content string,
+) (Message, error) {
+	if userID == uuid.Nil {
+		return Message{}, fmt.Errorf("invalid user id")
+	}
+
+	if conversationID == uuid.Nil {
+		return Message{}, fmt.Errorf("invalid conversation id")
+	}
+
+	content = strings.TrimSpace(content)
+
+	if content == "" {
+		return Message{}, fmt.Errorf("message content cannot be empty")
+	}
+
+	isMember, err := s.conversations.IsMember(
+		ctx,
+		conversationID,
+		userID,
+	)
+	if err != nil {
+		return Message{}, fmt.Errorf("check conversation membership: %w", err)
+	}
+
+	if !isMember {
+		return Message{}, fmt.Errorf("user is not a conversation member")
+	}
+
+	messageID := uuid.New()
+
+	err = s.messages.Create(ctx, db.CreateMessageParams{
+		ID:             messageID.String(),
+		ConversationID: conversationID.String(),
+		SenderID:       userID.String(),
+		Content:        content,
+	})
+	if err != nil {
+		return Message{}, fmt.Errorf("create message: %w", err)
+	}
+
+	row, err := s.messages.GetByID(ctx, messageID)
+	if err != nil {
+		return Message{}, fmt.Errorf("get created message: %w", err)
+	}
+
+	parsedID, err := uuid.Parse(row.ID)
+	if err != nil {
+		return Message{}, fmt.Errorf("parse message id: %w", err)
+	}
+
+	senderID, err := uuid.Parse(row.SenderID)
+	if err != nil {
+		return Message{}, fmt.Errorf("parse sender id: %w", err)
+	}
+
+	return Message{
+		ID:             parsedID,
+		ConversationID: conversationID,
+		SenderID:       senderID,
+		Content:        row.Content,
+		CreatedAt:      row.CreatedAt,
+	}, nil
 }
