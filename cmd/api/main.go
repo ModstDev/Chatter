@@ -10,6 +10,7 @@ import (
 	"github.com/ModstDev/Chatter/internal/database"
 	sqlc "github.com/ModstDev/Chatter/internal/database/sqlc"
 	server "github.com/ModstDev/Chatter/internal/http"
+	"github.com/ModstDev/Chatter/internal/message"
 	"github.com/ModstDev/Chatter/internal/user"
 	"github.com/joho/godotenv"
 )
@@ -45,7 +46,17 @@ func main() {
 	conversationService := conversation.NewService(conversationRepository)
 	conversationHandler := conversation.NewHandler(conversationService)
 
-	router := server.NewRouter(userHandler, authHandler, conversationHandler, tokenManager)
+	messageRepository := message.NewRepository(queries)
+	messageService := message.NewService(messageRepository, conversationRepository)
+	messageHandler := message.NewHandler(messageService)
+
+	router := server.NewRouter(
+		userHandler,
+		authHandler,
+		conversationHandler,
+		messageHandler,
+		tokenManager,
+	)
 
 	log.Println("server listening on :8080")
 
