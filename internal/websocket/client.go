@@ -27,19 +27,19 @@ func (c *Client) UserID() uuid.UUID {
 	return c.userID
 }
 
-func (c *Client) writeLoop(ctx context.Context) {
+func (c *Client) writeLoop(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 
 		case message, ok := <-c.send:
 			if !ok {
-				return
+				return nil
 			}
 
 			if err := c.conn.Write(ctx, websocket.MessageText, message); err != nil {
-				return
+				return err
 			}
 		}
 	}

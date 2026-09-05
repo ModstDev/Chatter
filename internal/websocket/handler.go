@@ -77,7 +77,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	go client.writeLoop(ctx)
+	go func() {
+		if err := client.writeLoop(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Printf("websocket write: %v", err)
+		}
+		cancel()
+	}()
 
 	h.readLoop(ctx, client)
 }
