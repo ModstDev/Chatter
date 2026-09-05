@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/ModstDev/Chatter/internal/auth"
@@ -84,5 +85,10 @@ func New(cfg *config.Config) (*Server, error) {
 func (s *Server) Run() error {
 	defer s.db.Close()
 
-	return s.httpServer.ListenAndServe()
+	err := s.httpServer.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+
+	return err
 }

@@ -49,5 +49,5 @@ func NewRouter(userHandler *user.Handler,
 		auth.AuthMiddleware(tokenManager,
 			http.HandlerFunc(conversationHandler.Create)))
 
-	return mux
+	return cors(mux)
 }

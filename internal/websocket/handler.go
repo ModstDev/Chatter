@@ -61,7 +61,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := websocket.Accept(w, r, nil)
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		OriginPatterns: []string{"localhost:3000"},
+	})
 	if err != nil {
 		return
 	}
@@ -88,15 +90,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) authenticate(r *http.Request) (uuid.UUID, error) {
-	header := r.Header.Get("Authorization")
+	token := ""
 
+	header := r.Header.Get("Authorization")
 	const prefix = "Bearer "
 
-	if !strings.HasPrefix(header, prefix) {
-		return uuid.Nil, errors.New("unauthorized")
+	if strings.HasPrefix(header, prefix) {
+		token = strings.TrimSpace(strings.TrimPrefix(header, prefix))
 	}
 
-	token := strings.TrimSpace(strings.TrimPrefix(header, prefix))
+	if token == "" {
+		token = r.URL.Query().Get("token")
+	}
 
 	if token == "" {
 		return uuid.Nil, errors.New("unauthorized")
