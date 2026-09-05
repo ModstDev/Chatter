@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -40,6 +41,11 @@ type messageRequest struct {
 type messageEvent struct {
 	Type    string           `json:"type"`
 	Message *message.Message `json:"message"`
+}
+
+type errorEvent struct {
+	Type  string `json:"type"`
+	Error string `json:"error"`
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -93,20 +99,25 @@ func (h *Handler) readLoop(ctx context.Context, client *Client) {
 
 		var req messageRequest
 		if err := json.Unmarshal(data, &req); err != nil {
+			h.sendError(client, fmt.Errorf("invalid message format"))
 			continue
 		}
 
 		if req.Type != "message" {
+			h.sendError(client, fmt.Errorf("unsupported message type"))
 			continue
 		}
 
 		conversationID, err := uuid.Parse(req.ConversationID)
 		if err != nil {
+			h.sendError(client, fmt.Errorf("invalid conversation id"))
 			continue
 		}
 
 		msg, err := h.messages.Send(ctx, client.userID, conversationID, req.Content)
 		if err != nil {
+			log.Printf("send message: %v", err)
+			h.sendError(client, err)
 			continue
 		}
 
@@ -127,5 +138,22 @@ func (h *Handler) readLoop(ctx context.Context, client *Client) {
 		for _, memberID := range memberIDs {
 			h.hub.SendToUser(memberID, event)
 		}
+	}
+}
+
+func (h *Handler) sendError(client *Client, err error) {
+	event, marshalErr := json.Marshal(errorEvent{
+		Type:  "error",
+		Error: err.Error(),
+	})
+	if marshalErr != nil {
+		log.Printf("encode websocket error: %v", err)
+		return
+	}
+
+	select {
+	case client.send <- event:
+	default:
+		log.Printf("client send buffer is full")
 	}
 }
