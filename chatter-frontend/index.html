@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chatter</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <section id="authView" class="auth-view">
+      <div class="brand">
+        <div class="logo">C</div>
+        <div>
+          <h1>Chatter</h1>
+          <p>Go WebSocket chat tester</p>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="tabs">
+          <button class="tab active" data-auth="login">Login</button>
+          <button class="tab" data-auth="register">Register</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <label>Email<input id="loginEmail" type="email" value="alice@example.com" required></label>
+          <label>Password<input id="loginPassword" type="password" value="password123" required></label>
+          <button class="primary" type="submit">Login</button>
+        </form>
+
+        <form id="registerForm" class="auth-form hidden">
+          <label>Username<input id="registerUsername" required></label>
+          <label>Email<input id="registerEmail" type="email" required></label>
+          <label>Password<input id="registerPassword" type="password" required></label>
+          <button class="primary" type="submit">Create account</button>
+        </form>
+
+        <div id="authStatus" class="status"></div>
+      </div>
+    </section>
+
+    <section id="chatView" class="chat-view hidden">
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <div>
+            <span class="eyebrow">SIGNED IN</span>
+            <strong id="currentUser">User</strong>
+          </div>
+          <button id="logoutBtn" class="ghost">Logout</button>
+        </div>
+
+        <div class="connection">
+          <span id="connectionDot" class="dot"></span>
+          <span id="connectionText">Disconnected</span>
+          <button id="connectBtn" class="small">Connect</button>
+        </div>
+
+        <div class="conversation-head">
+          <h2>Conversations</h2>
+          <button id="refreshConversations" class="icon-btn" title="Refresh">↻</button>
+        </div>
+        <div id="conversationList" class="conversation-list"></div>
+
+        <div class="new-conversation">
+          <h3>New direct chat</h3>
+          <input id="otherUserId" placeholder="Other user UUID">
+          <button id="createConversationBtn" class="secondary">Open conversation</button>
+        </div>
+      </aside>
+
+      <section class="chat">
+        <header class="chat-head">
+          <div>
+            <span class="eyebrow">CONVERSATION</span>
+            <h2 id="conversationTitle">Select a conversation</h2>
+            <code id="conversationId"></code>
+          </div>
+          <div class="chat-actions">
+            <button id="loadHistoryBtn" class="secondary" disabled>Load history</button>
+            <button id="syncBtn" class="secondary" disabled>Sync</button>
+          </div>
+        </header>
+
+        <div id="eventBanner" class="event-banner hidden" aria-live="polite"></div>
+        <div id="messages" class="messages">
+          <div class="empty">
+            <div class="empty-icon">↗</div>
+            <h3>Choose a conversation</h3>
+            <p>Your messages, history and WebSocket events will appear here.</p>
+          </div>
+        </div>
+
+        <form id="messageForm" class="composer">
+          <input id="messageInput" placeholder="Write a message..." autocomplete="off" disabled>
+          <button class="primary send" type="submit" disabled>Send</button>
+        </form>
+      </section>
+
+      <aside class="inspector">
+        <div class="inspector-head">
+          <span class="eyebrow">DEBUG</span>
+          <h2>Connection inspector</h2>
+        </div>
+        <div class="debug-grid">
+          <div><span>Status</span><strong id="debugStatus">Offline</strong></div>
+          <div><span>Socket</span><strong id="debugSocket">Closed</strong></div>
+          <div><span>Last cursor</span><code id="debugCursor">—</code></div>
+        </div>
+        <div class="log-head">
+          <h3>Events</h3>
+          <button id="clearLog" class="icon-btn">Clear</button>
+        </div>
+        <pre id="eventLog" class="event-log"></pre>
+      </aside>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

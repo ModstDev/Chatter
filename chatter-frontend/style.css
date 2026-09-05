@@ -1,0 +1,555 @@
+* {
+    box-sizing: border-box
+}
+
+body {
+    margin: 0;
+    background: #0b0d12;
+    color: #edf0f6;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+}
+
+button,
+input {
+    font: inherit
+}
+
+button {
+    cursor: pointer
+}
+
+.hidden {
+    display: none !important
+}
+
+.app {
+    min-height: 100vh
+}
+
+.auth-view {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 32px
+}
+
+.brand {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    position: absolute;
+    top: 34px;
+    left: 40px
+}
+
+.logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    color: #0b0d12;
+    font-weight: 900;
+    font-size: 21px
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 20px
+}
+
+.brand p {
+    margin: 2px 0 0;
+    color: #7f8797;
+    font-size: 13px
+}
+
+.auth-card {
+    width: min(420px, 100%);
+    background: #12151c;
+    border: 1px solid #252a35;
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: 0 20px 60px #0005
+}
+
+.tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #0b0d12;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px
+}
+
+.tab {
+    border: 0;
+    background: transparent;
+    color: #858c9d;
+    padding: 10px;
+    border-radius: 8px
+}
+
+.tab.active {
+    background: #252a35;
+    color: #fff
+}
+
+.auth-form {
+    display: grid;
+    gap: 15px
+}
+
+.auth-form label,
+.new-conversation label {
+    display: grid;
+    gap: 7px;
+    font-size: 13px;
+    color: #a8afbd
+}
+
+.auth-form input,
+.new-conversation input,
+.composer input {
+    width: 100%;
+    border: 1px solid #2a303c;
+    background: #0c0f15;
+    color: #fff;
+    border-radius: 9px;
+    padding: 12px 13px;
+    outline: none
+}
+
+.auth-form input:focus,
+.new-conversation input:focus,
+.composer input:focus {
+    border-color: #8d96a8
+}
+
+.primary,
+.secondary,
+.ghost,
+.small,
+.icon-btn {
+    border: 1px solid #303744;
+    border-radius: 9px;
+    padding: 10px 13px;
+    color: #fff;
+    background: #202632
+}
+
+.primary {
+    background: #fff;
+    color: #0b0d12;
+    border-color: #fff;
+    font-weight: 700
+}
+
+.secondary:hover,
+.ghost:hover,
+.small:hover,
+.icon-btn:hover {
+    background: #2a303b
+}
+
+.status {
+    min-height: 20px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #a8afbd
+}
+
+.chat-view {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr) 290px;
+    height: 100vh
+}
+
+.sidebar,
+.inspector {
+    background: #10131a;
+    border-color: #242a34
+}
+
+.sidebar {
+    border-right: 1px solid #242a34;
+    padding: 18px
+}
+
+.inspector {
+    border-left: 1px solid #242a34;
+    padding: 18px
+}
+
+.sidebar-head,
+.conversation-head,
+.log-head,
+.chat-head,
+.connection,
+.debug-grid>div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between
+}
+
+.sidebar-head {
+    padding-bottom: 17px;
+    border-bottom: 1px solid #242a34
+}
+
+.eyebrow {
+    font-size: 10px;
+    letter-spacing: .12em;
+    color: #70798b;
+    display: block;
+    margin-bottom: 3px
+}
+
+.ghost {
+    background: transparent;
+    border: 0;
+    color: #929aaa;
+    padding: 6px
+}
+
+.connection {
+    margin: 16px 0;
+    padding: 10px 11px;
+    background: #0b0e14;
+    border: 1px solid #252b36;
+    border-radius: 10px;
+    font-size: 12px
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #687080;
+    margin-right: 7px;
+    display: inline-block
+}
+
+.dot.online {
+    background: #71d49a
+}
+
+.connection-text {
+    flex: 1
+}
+
+.small {
+    padding: 6px 9px;
+    font-size: 11px
+}
+
+.conversation-head h2,
+.inspector h2 {
+    font-size: 13px;
+    margin: 20px 0 10px
+}
+
+.icon-btn {
+    padding: 4px 8px;
+    background: transparent
+}
+
+.conversation-list {
+    display: grid;
+    gap: 5px;
+    max-height: 52vh;
+    overflow: auto
+}
+
+.conversation {
+    padding: 11px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #dfe3ea;
+    text-align: left
+}
+
+.conversation:hover {
+    background: #191d25
+}
+
+.conversation.active {
+    background: #202630;
+    border-color: #303744
+}
+
+.conversation .name {
+    font-weight: 650;
+    font-size: 13px
+}
+
+.conversation .id {
+    font-size: 10px;
+    color: #687182;
+    margin-top: 4px
+}
+
+.new-conversation {
+    border-top: 1px solid #242a34;
+    margin-top: 18px;
+    padding-top: 15px
+}
+
+.new-conversation h3 {
+    font-size: 12px;
+    margin: 0 0 9px
+}
+
+.new-conversation {
+    display: grid;
+    gap: 8px
+}
+
+.chat {
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    min-width: 0;
+    background: #0b0e14
+}
+
+.chat-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid #242a34;
+    gap: 15px
+}
+
+.chat-head h2 {
+    font-size: 17px;
+    margin: 0
+}
+
+.chat-head code {
+    font-size: 10px;
+    color: #697386;
+    display: block;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 50vw
+}
+
+.chat-actions {
+    display: flex;
+    gap: 8px
+}
+
+.event-banner {
+    padding: 8px 22px;
+    background: #171c25;
+    border-bottom: 1px solid #252b36;
+    color: #aab2c1;
+    font-size: 12px
+}
+
+.messages {
+    padding: 22px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 9px
+}
+
+.message {
+    max-width: 72%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #181c24;
+    border: 1px solid #252b35
+}
+
+.message.mine {
+    align-self: flex-end;
+    background: #e9edf4;
+    color: #11151c;
+    border-color: #e9edf4
+}
+
+.message .meta {
+    font-size: 10px;
+    color: #727b8c;
+    margin-bottom: 4px
+}
+
+.mine .meta {
+    color: #596170
+}
+
+.message .body {
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere
+}
+
+.message .time {
+    font-size: 9px;
+    color: #70798a;
+    margin-top: 5px
+}
+
+.mine .time {
+    color: #606977
+}
+
+.empty {
+    margin: auto;
+    text-align: center;
+    max-width: 360px;
+    color: #778092
+}
+
+.empty-icon {
+    font-size: 30px;
+    margin-bottom: 7px;
+    color: #b4bccb
+}
+
+.empty h3 {
+    color: #dce1e9;
+    margin: 0 0 6px;
+    font-size: 16px
+}
+
+.empty p {
+    font-size: 13px;
+    line-height: 1.5
+}
+
+.composer {
+    display: flex;
+    gap: 9px;
+    padding: 15px 22px;
+    border-top: 1px solid #242a34
+}
+
+.composer input {
+    flex: 1
+}
+
+.send {
+    min-width: 74px
+}
+
+.debug-grid {
+    display: grid;
+    gap: 7px;
+    margin: 12px 0 22px
+}
+
+.debug-grid>div {
+    background: #0b0e14;
+    border: 1px solid #242a34;
+    border-radius: 9px;
+    padding: 10px
+}
+
+.debug-grid span {
+    font-size: 11px;
+    color: #747d8e
+}
+
+.debug-grid strong {
+    font-size: 11px
+}
+
+.debug-grid code {
+    font-size: 9px;
+    color: #8790a1;
+    max-width: 145px;
+    overflow: hidden;
+    text-overflow: ellipsis
+}
+
+.log-head {
+    border-top: 1px solid #242a34;
+    padding-top: 15px
+}
+
+.log-head h3 {
+    font-size: 12px
+}
+
+.event-log {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #8790a1;
+    font-size: 10px;
+    line-height: 1.55;
+    max-height: 58vh;
+    overflow: auto
+}
+
+.inspector-head h2 {
+    margin-top: 0
+}
+
+.error {
+    color: #ef9292
+}
+
+.success {
+    color: #8bd7aa
+}
+
+@media(max-width:1000px) {
+    .chat-view {
+        grid-template-columns: 230px minmax(0, 1fr)
+    }
+
+    .inspector {
+        display: none
+    }
+}
+
+@media(max-width:700px) {
+    .chat-view {
+        grid-template-columns: 1fr
+    }
+
+    .sidebar {
+        display: none
+    }
+
+    .chat-head {
+        padding: 14px
+    }
+
+    .chat-actions {
+        display: none
+    }
+
+    .message {
+        max-width: 88%
+    }
+
+    .auth-view {
+        padding: 20px
+    }
+
+    .brand {
+        position: static;
+        margin-bottom: 20px
+    }
+
+    .auth-view {
+        display: flex;
+        flex-direction: column;
+        justify-content: center
+    }
+
+    .composer {
+        padding: 12px
+    }
+
+    .messages {
+        padding: 14px
+    }
+}
