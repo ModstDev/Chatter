@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"log"
 	"sync"
 
 	"github.com/google/uuid"
@@ -57,6 +58,10 @@ func (h *Hub) SendToUser(userID uuid.UUID, message []byte) {
 		case client.send <- message:
 		default:
 			// Client is too slow
+			log.Printf(
+				"client send buffer full: user=%s",
+				client.UserID(),
+			)
 		}
 	}
 }

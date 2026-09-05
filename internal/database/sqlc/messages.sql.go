@@ -109,6 +109,69 @@ func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]M
 	return items, nil
 }
 
+const listMessagesAfter = `-- name: ListMessagesAfter :many
+SELECT
+    id,
+    conversation_id,
+    sender_id,
+    content,
+    created_at
+FROM messages
+WHERE conversation_id = ?
+  AND (
+      created_at > ?
+      OR (
+          created_at = ?
+          AND id > ?
+      )
+  )
+ORDER BY created_at ASC, id ASC
+LIMIT ?
+`
+
+type ListMessagesAfterParams struct {
+	ConversationID string
+	CreatedAt      time.Time
+	CreatedAt_2    time.Time
+	ID             string
+	Limit          int32
+}
+
+func (q *Queries) ListMessagesAfter(ctx context.Context, arg ListMessagesAfterParams) ([]Message, error) {
+	rows, err := q.db.QueryContext(ctx, listMessagesAfter,
+		arg.ConversationID,
+		arg.CreatedAt,
+		arg.CreatedAt_2,
+		arg.ID,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Message
+	for rows.Next() {
+		var i Message
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConversationID,
+			&i.SenderID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMessagesBefore = `-- name: ListMessagesBefore :many
 SELECT
     id,

@@ -23,6 +23,14 @@ type Repository interface {
 		limit int32,
 	) ([]db.Message, error)
 
+	ListAfter(
+		ctx context.Context,
+		conversationID uuid.UUID,
+		createdAt time.Time,
+		messageID uuid.UUID,
+		limit int32,
+	) ([]db.Message, error)
+
 	Create(ctx context.Context, params db.CreateMessageParams) error
 	GetByID(ctx context.Context, id uuid.UUID) (db.Message, error)
 }
@@ -62,6 +70,25 @@ func (r *repository) ListBefore(
 		ID:             messageID.String(),
 		Limit:          limit,
 	})
+}
+
+func (r *repository) ListAfter(
+	ctx context.Context,
+	conversationID uuid.UUID,
+	createdAt time.Time,
+	messageID uuid.UUID,
+	limit int32,
+) ([]db.Message, error) {
+	return r.queries.ListMessagesAfter(
+		ctx,
+		db.ListMessagesAfterParams{
+			ConversationID: conversationID.String(),
+			CreatedAt:      createdAt,
+			CreatedAt_2:    createdAt,
+			ID:             messageID.String(),
+			Limit:          limit,
+		},
+	)
 }
 
 func (r *repository) Create(ctx context.Context, params db.CreateMessageParams) error {

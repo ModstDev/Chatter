@@ -48,3 +48,22 @@ SELECT
 FROM messages
 WHERE id = ?
 LIMIT 1;
+
+-- name: ListMessagesAfter :many
+SELECT
+    id,
+    conversation_id,
+    sender_id,
+    content,
+    created_at
+FROM messages
+WHERE conversation_id = ?
+  AND (
+      created_at > ?
+      OR (
+          created_at = ?
+          AND id > ?
+      )
+  )
+ORDER BY created_at ASC, id ASC
+LIMIT ?;

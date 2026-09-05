@@ -36,6 +36,7 @@ type messageRequest struct {
 	Type           string `json:"type"`
 	ConversationID string `json:"conversation_id"`
 	Content        string `json:"content"`
+	After          string `json:"after"`
 }
 
 type messageEvent struct {
@@ -46,6 +47,11 @@ type messageEvent struct {
 type errorEvent struct {
 	Type  string `json:"type"`
 	Error string `json:"error"`
+}
+
+type syncEvent struct {
+	Type     string
+	Messages []message.Message
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -59,13 +65,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	defer conn.Close(websocket.StatusNormalClosure, "")
+
+	conn.SetReadLimit(64 * 1024)
 
 	client := NewClient(conn, userID)
 
 	h.hub.Register(client)
 	defer h.hub.Unregister(client)
 
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
 	go client.writeLoop(ctx)
 
@@ -103,40 +113,15 @@ func (h *Handler) readLoop(ctx context.Context, client *Client) {
 			continue
 		}
 
-		if req.Type != "message" {
+		switch req.Type {
+		case "message":
+			h.handleMessage(ctx, client, req)
+
+		case "sync":
+			h.handleSync(ctx, client, req)
+
+		default:
 			h.sendError(client, fmt.Errorf("unsupported message type"))
-			continue
-		}
-
-		conversationID, err := uuid.Parse(req.ConversationID)
-		if err != nil {
-			h.sendError(client, fmt.Errorf("invalid conversation id"))
-			continue
-		}
-
-		msg, err := h.messages.Send(ctx, client.userID, conversationID, req.Content)
-		if err != nil {
-			log.Printf("send message: %v", err)
-			h.sendError(client, err)
-			continue
-		}
-
-		event, err := json.Marshal(messageEvent{
-			Type:    "messaage",
-			Message: msg,
-		})
-		if err != nil {
-			continue
-		}
-
-		memberIDs, err := h.conversations.ListMembers(ctx, conversationID)
-		if err != nil {
-			log.Printf("list conversation members: %v", err)
-			continue
-		}
-
-		for _, memberID := range memberIDs {
-			h.hub.SendToUser(memberID, event)
 		}
 	}
 }
@@ -155,5 +140,102 @@ func (h *Handler) sendError(client *Client, err error) {
 	case client.send <- event:
 	default:
 		log.Printf("client send buffer is full")
+	}
+}
+
+func (h *Handler) handleMessage(
+	ctx context.Context,
+	client *Client,
+	req messageRequest,
+) {
+	conversationID, err := uuid.Parse(req.ConversationID)
+	if err != nil {
+		h.sendError(client, fmt.Errorf("invalid conversation id"))
+		return
+	}
+
+	msg, err := h.messages.Send(
+		ctx,
+		client.userID,
+		conversationID,
+		req.Content,
+	)
+	if err != nil {
+		log.Printf("send message: %v", err)
+		h.sendError(client, err)
+		return
+	}
+
+	event, err := json.Marshal(messageEvent{
+		Type:    "message",
+		Message: msg,
+	})
+	if err != nil {
+		log.Printf("encode message event: %v", err)
+		return
+	}
+
+	memberIDs, err := h.conversations.ListMembers(
+		ctx,
+		conversationID,
+	)
+	if err != nil {
+		log.Printf("list conversation members: %v", err)
+		h.sendError(client, fmt.Errorf("failed to deliver message"))
+		return
+	}
+
+	for _, memberID := range memberIDs {
+		h.hub.SendToUser(memberID, event)
+	}
+}
+
+func (h *Handler) handleSync(
+	ctx context.Context,
+	client *Client,
+	req messageRequest,
+) {
+	conversationID, err := uuid.Parse(req.ConversationID)
+	if err != nil {
+		h.sendError(client, fmt.Errorf("invalid conversation id"))
+		return
+	}
+
+	if req.After == "" {
+		h.sendError(client, fmt.Errorf("missing sync cursor"))
+		return
+	}
+
+	cursor, err := message.DecodeCursor(req.After)
+	if err != nil {
+		h.sendError(client, fmt.Errorf("invalid cursor"))
+		return
+	}
+
+	messages, err := h.messages.ListAfter(
+		ctx,
+		client.userID,
+		conversationID,
+		&cursor,
+	)
+	if err != nil {
+		log.Printf("sync messages: %v", err)
+		h.sendError(client, err)
+		return
+	}
+
+	event, err := json.Marshal(syncEvent{
+		Type:     "sync",
+		Messages: messages,
+	})
+	if err != nil {
+		log.Printf("encode sync event: %v", err)
+		return
+	}
+
+	select {
+	case client.send <- event:
+	default:
+		log.Printf("client send buffer full")
 	}
 }

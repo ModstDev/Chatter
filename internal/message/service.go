@@ -44,7 +44,7 @@ type MessagePage struct {
 	HasMore    bool
 }
 
-type messageCursor struct {
+type MessageCursor struct {
 	CreatedAt time.Time `json:"created_at"`
 	MessageID uuid.UUID `json:"message_id"`
 }
@@ -88,7 +88,7 @@ func (s *Service) ListHistory(
 	if before == "" {
 		rows, err = s.messages.List(ctx, conversationID, queryLimit)
 	} else {
-		cursor, err := decodeCursor(before)
+		cursor, err := DecodeCursor(before)
 		if err != nil {
 			return MessagePage{}, err
 		}
@@ -131,12 +131,12 @@ func (s *Service) ListHistory(
 	if hasMore && len(messages) > 0 {
 		last := messages[len(messages)-1]
 
-		cursor := messageCursor{
+		cursor := MessageCursor{
 			CreatedAt: last.CreatedAt,
 			MessageID: last.ID,
 		}
 
-		encoded, err := encodeCursor(cursor)
+		encoded, err := EncodeCursor(cursor)
 		if err != nil {
 			return MessagePage{}, fmt.Errorf("encode next cursor: %w", err)
 		}
@@ -151,7 +151,7 @@ func (s *Service) ListHistory(
 	}, nil
 }
 
-func encodeCursor(cursor messageCursor) (string, error) {
+func EncodeCursor(cursor MessageCursor) (string, error) {
 	data, err := json.Marshal(cursor)
 	if err != nil {
 		return "", err
@@ -160,20 +160,20 @@ func encodeCursor(cursor messageCursor) (string, error) {
 	return base64.RawStdEncoding.EncodeToString(data), nil
 }
 
-func decodeCursor(value string) (messageCursor, error) {
+func DecodeCursor(value string) (MessageCursor, error) {
 	data, err := base64.RawURLEncoding.DecodeString(value)
 	if err != nil {
-		return messageCursor{}, fmt.Errorf("invalid message cursor: %w", err)
+		return MessageCursor{}, fmt.Errorf("invalid message cursor: %w", err)
 	}
 
-	var cursor messageCursor
+	var cursor MessageCursor
 
 	if err := json.Unmarshal(data, &cursor); err != nil {
-		return messageCursor{}, fmt.Errorf("invalid message cursor: %w", err)
+		return MessageCursor{}, fmt.Errorf("invalid message cursor: %w", err)
 	}
 
 	if cursor.MessageID == uuid.Nil || cursor.CreatedAt.IsZero() {
-		return messageCursor{}, fmt.Errorf("invalid message cursor: %w", err)
+		return MessageCursor{}, fmt.Errorf("invalid message cursor: %w", err)
 	}
 
 	return cursor, nil
@@ -246,4 +246,56 @@ func (s *Service) Send(
 		Content:        row.Content,
 		CreatedAt:      row.CreatedAt,
 	}, nil
+}
+
+func (s *Service) ListAfter(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID, cursor *MessageCursor) ([]Message, error) {
+	if userID == uuid.Nil {
+		return nil, fmt.Errorf("invalid user id")
+	}
+
+	if conversationID == uuid.Nil {
+		return nil, fmt.Errorf("invalid conversation id")
+	}
+
+	if cursor == nil || cursor.MessageID == uuid.Nil {
+		return nil, fmt.Errorf("invalid message cursor")
+	}
+
+	isMember, err := s.conversations.IsMember(ctx, conversationID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("check conversation membership: %w", err)
+	}
+
+	if !isMember {
+		return nil, fmt.Errorf("user is not a conversation member")
+	}
+
+	rows, err := s.messages.ListAfter(ctx, conversationID, cursor.CreatedAt, cursor.MessageID, 100)
+	if err != nil {
+		return nil, fmt.Errorf("list messaages after cursor: %w", err)
+	}
+
+	messages := make([]Message, 0, len(rows))
+
+	for _, row := range rows {
+		id, err := uuid.Parse(row.ID)
+		if err != nil {
+			return nil, fmt.Errorf("parse message id: %w", err)
+		}
+
+		senderID, err := uuid.Parse(row.SenderID)
+		if err != nil {
+			return nil, fmt.Errorf("parse sender id: %w", err)
+		}
+
+		messages = append(messages, Message{
+			ID:             id,
+			ConversationID: conversationID,
+			SenderID:       senderID,
+			Content:        row.Content,
+			CreatedAt:      row.CreatedAt,
+		})
+	}
+
+	return messages, nil
 }
